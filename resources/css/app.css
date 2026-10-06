@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== Paste at the END of resources/css/app.css ===== */
+
+:root, [data-theme="blue"] {
+  color-scheme: dark;
+  --bg: linear-gradient(135deg, #172554 0%, #1e40af 50%, #0284c7 100%);
+  --card: rgba(255,255,255,.10);   --card-border: rgba(255,255,255,.20);
+  --shadow: 0 20px 25px -5px rgba(23,37,84,.25);
+  --text: #ffffff;                 --muted: rgba(224,242,254,.75);   --accent: #bae6fd;
+  --input-bg: rgba(255,255,255,.07); --input-border: rgba(255,255,255,.20);
+  --input-hover: rgba(255,255,255,.40); --input-focus-bg: rgba(255,255,255,.12); --ring: rgba(186,230,253,.15);
+  --btn-bg: #ffffff; --btn-text: #172554; --btn-hover: #f0f9ff;
+  --bubble: rgba(255,255,255,.10); --nav-bg: rgba(23,37,84,.90);
+  --hover: rgba(255,255,255,.10);  --grid: rgba(255,255,255,.12);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --bg: linear-gradient(135deg, #f8fafc 0%, #eef4fb 55%, #dbeafe 100%);
+  --card: rgba(255,255,255,.75);   --card-border: rgba(203,213,225,.80);
+  --shadow: 0 10px 30px -10px rgba(30,64,175,.18);
+  --text: #0f1f4b;                 --muted: #475569;                 --accent: #1f7ac9;
+  --input-bg: #ffffff;             --input-border: #cbd5e1;
+  --input-hover: #94a3b8;          --input-focus-bg: #ffffff;        --ring: rgba(56,189,248,.25);
+  --btn-bg: #1f7ac9; --btn-text: #ffffff; --btn-hover: #1b6db5;
+  --bubble: rgba(147,197,253,.25); --nav-bg: rgba(255,255,255,.85);
+  --hover: rgba(30,64,175,.08);    --grid: rgba(15,31,75,.10);
+}
+
+@layer components {
+  .theme-page { background: var(--bg); color: var(--text); }
+  .glass { background: var(--card); border: 1px solid var(--card-border); box-shadow: var(--shadow);
+           -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); }
+  .t-nav { background: var(--nav-bg); border-bottom: 1px solid var(--card-border);
+           -webkit-backdrop-filter: blur(24px); backdrop-filter: blur(24px); }
+  /* Solid white dropdown in every theme; variables are overridden so text stays readable */
+  .t-dropdown {
+    background: #ffffff;
+    border: 1px solid #cbd5e1;
+    --text: #0f1f4b;
+    --muted: #475569;
+    --hover: rgba(30,64,175,.08);
+  }
+  .t-text { color: var(--text); }
+  .t-muted { color: var(--muted); }
+  .t-accent { color: var(--accent); }
+  .t-accent:hover { color: var(--text); }
+  .t-ring { border-color: var(--accent); }
+  .t-divider { border-color: var(--card-border); }
+  .t-bubble { background: var(--bubble); }
+  .t-input { background: var(--input-bg); border: 1px solid var(--input-border); color: var(--text); transition: all .15s; }
+  .t-input::placeholder { color: var(--muted); opacity: .6; }
+  .t-input:hover { border-color: var(--input-hover); }
+  .t-input:focus { outline: none; border-color: var(--accent); background: var(--input-focus-bg); box-shadow: 0 0 0 4px var(--ring); }
+  .t-btn { background: var(--btn-bg); color: var(--btn-text); transition: all .15s; }
+  .t-btn:hover { background: var(--btn-hover); }
+  /* show the right logo per theme */
+  [data-theme="light"] .logo-blue { display: none; }
+  :root:not([data-theme="light"]) .logo-light { display: none; }
+}
+
+/* Alpine: hide elements until Alpine initializes (prevents dropdown flash) */
+[x-cloak] { display: none !important; }
