@@ -51,11 +51,13 @@
                         Load
                     </button>
 
-                    <button type="button" onclick="openUserForm('create')"
+                    @module('users','create')
+<button type="button" onclick="openUserForm('create')"
                             class="t-text ms-auto inline-flex h-9 items-center gap-1.5 rounded-lg border border-sky-500/60 px-4 text-sm font-semibold transition hover:bg-[color:var(--hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
                         Add User
                     </button>
+@endmodule
                 </form>
             </div>
 
@@ -93,13 +95,16 @@
                                     <td class="px-4 py-2.5">
                                         <div class="flex items-center justify-center gap-1">
                                             {{-- Edit --}}
-                                            <button type="button" title="Edit" aria-label="Edit {{ $u->name }}" class="{{ $iconBtn }}"
+                                            @module('users','edit')
+<button type="button" title="Edit" aria-label="Edit {{ $u->name }}" class="{{ $iconBtn }}"
                                                     data-user="{{ json_encode(['id' => $u->id, 'name' => $u->name, 'email' => $u->email, 'usertype_id' => $u->usertype_id]) }}"
                                                     onclick="openUserForm('edit', JSON.parse(this.dataset.user))">
                                                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>
                                             </button>
+@endmodule
                                             {{-- Reset password --}}
-                                            <button type="button" title="Send new password" aria-label="Send new password to {{ $u->name }}" class="{{ $iconBtn }}"
+                                            @module('users','edit')
+<button type="button" title="Send new password" aria-label="Send new password to {{ $u->name }}" class="{{ $iconBtn }}"
                                                     onclick="openConfirm({
                                                         title: 'Send a new password?',
                                                         text: @js('A new random password will be emailed to ' . $u->email . '. The current password stops working.'),
@@ -107,8 +112,9 @@
                                                         method: 'POST', button: 'Send new password' })">
                                                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="15" r="4"/><path d="M10.8 12.2L20 3M16 7l3 3M14 9l2 2"/></svg>
                                             </button>
+@endmodule
                                             {{-- Delete --}}
-                                            @if ($u->id !== auth()->id())
+                                            @if ($u->id !== auth()->id() && \App\Services\Access::can(auth()->user(), 'users', 'delete'))
                                                 <button type="button" title="Delete" aria-label="Delete {{ $u->name }}" class="{{ $iconBtn }} hover:!text-red-400"
                                                         onclick="openConfirm({
                                                             title: 'Delete this user?',

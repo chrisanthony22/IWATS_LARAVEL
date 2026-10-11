@@ -110,7 +110,7 @@
                             <a href="#" class="block px-4 py-2 text-sm font-semibold t-muted transition hover:bg-[color:var(--hover)]">
                                 {{ __('User Types') }}
                             </a>
-                            <a href="#" class="block px-4 py-2 text-sm font-semibold t-muted transition hover:bg-[color:var(--hover)]">
+                            <a href="{{ route('module-access.index') }}" class="block px-4 py-2 text-sm font-semibold t-muted transition hover:bg-[color:var(--hover)]">
                                 {{ __('Module Access') }}
                             </a>
                         </div>
@@ -150,12 +150,12 @@
                 </button>
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
-                        <button class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-semibold t-text
+                        <button class="inline-flex items-center rounded-lg px-3 py-1.5 text-sm t-text
                                        transition hover:bg-[color:var(--hover)] focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-200">
                             <div class="flex items-center gap-2">
                                 <span>{{ Auth::user()->name }}</span>
                                 @if ($userTypeName)
-                                    <span class="t-muted rounded-full border t-ring px-2 py-0.5 text-[11px] font-semibold">{{ $userTypeName }}</span>
+                                    <span class="t-muted rounded-full border t-ring px-2 py-0.5 text-[11px]">{{ $userTypeName }}</span>
                                 @endif
                             </div>
 
@@ -300,7 +300,7 @@
                     <a href="#" class="block rounded-lg px-3 py-2 text-sm font-semibold t-muted transition hover:bg-[color:var(--hover)]">
                         {{ __('User Types') }}
                     </a>
-                    <a href="#" class="block rounded-lg px-3 py-2 text-sm font-semibold t-muted transition hover:bg-[color:var(--hover)]">
+                    <a href="{{ route('module-access.index') }}" class="block rounded-lg px-3 py-2 text-sm font-semibold t-muted transition hover:bg-[color:var(--hover)]">
                         {{ __('Module Access') }}
                     </a>
                 </div>
@@ -330,7 +330,7 @@
         <div class="border-t t-divider pt-4 pb-3">
             <div class="px-4">
                 <div class="flex items-center gap-2">
-                    <span class="text-base font-semibold t-text">{{ Auth::user()->name }}</span>
+                    <span class="text-base t-text">{{ Auth::user()->name }}</span>
                     @if ($userTypeName)
                         <span class="t-muted rounded-full border t-ring px-2 py-0.5 text-[11px] font-semibold">{{ $userTypeName }}</span>
                     @endif

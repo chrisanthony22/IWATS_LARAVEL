@@ -745,5 +745,81 @@ class DataService
     /** END OF USER ACCOUNT CRUD FUNCTIONS */
 
 
+    /* =====================================================================
+     |  READ / WRITE: MODULE ACCESS (role based restrictions)
+     ===================================================================== */
+ 
+    /** Every module (screen) of the system, in display order. */
+    public function getModules(): Collection
+    {
+        return $this->rememberRows('dd:modules', 300, fn () =>
+            DB::table('IWMS_Modules')->select('ID', 'ModuleKey', 'ModuleName', 'SortOrder')
+                ->orderBy('SortOrder')->orderBy('ModuleName')->get());
+    }
+ 
+    /** Flags for the edit screen: [moduleId => ['view' => bool, 'create' => bool, 'edit' => bool, 'delete' => bool]]. Not cached. */
+    public function getAccessByModuleId(int $typeId): array
+    {
+        return DB::table('IWMS_UserTypeAccess')
+            ->where('UserTypeID', $typeId)
+            ->get()
+            ->mapWithKeys(fn ($r) => [(int) $r->ModuleID => [
+                'view'   => (bool) $r->CanView,
+                'create' => (bool) $r->CanCreate,
+                'edit'   => (bool) $r->CanEdit,
+                'delete' => (bool) $r->CanDelete,
+            ]])
+            ->all();
+    }
+ 
+    /** Flags used by the middleware, directive and nav: [moduleKey => flags]. Cached per user type for 5 minutes. */
+    public function getAccessMap(int $typeId): array
+    {
+        return Cache::remember("access:type:{$typeId}", 300, fn () =>
+            DB::table('IWMS_UserTypeAccess as A')
+                ->join('IWMS_Modules as M', 'A.ModuleID', '=', 'M.ID')
+                ->where('A.UserTypeID', $typeId)
+                ->get(['M.ModuleKey', 'A.CanView', 'A.CanCreate', 'A.CanEdit', 'A.CanDelete'])
+                ->mapWithKeys(fn ($r) => [$r->ModuleKey => [
+                    'view'   => (bool) $r->CanView,
+                    'create' => (bool) $r->CanCreate,
+                    'edit'   => (bool) $r->CanEdit,
+                    'delete' => (bool) $r->CanDelete,
+                ]])
+                ->all()
+        );
+    }
+ 
+    /**
+     * Replaces everything one user type may do. $rows = [moduleId => ['view' => bool, 'create' => bool, 'edit' => bool, 'delete' => bool]].
+     * Modules with nothing ticked get no row at all (= no access). The cache is cleared so it applies immediately.
+     */
+    public function saveAccess(int $typeId, array $rows): void
+    {
+        DB::transaction(function () use ($typeId, $rows) {
+            DB::table('IWMS_UserTypeAccess')->where('UserTypeID', $typeId)->delete();
+ 
+            $insert = [];
+            foreach ($rows as $moduleId => $f) {
+                if ($f['view'] || $f['create'] || $f['edit'] || $f['delete']) {
+                    $insert[] = [
+                        'UserTypeID' => $typeId,
+                        'ModuleID'   => (int) $moduleId,
+                        'CanView'    => (int) $f['view'],
+                        'CanCreate'  => (int) $f['create'],
+                        'CanEdit'    => (int) $f['edit'],
+                        'CanDelete'  => (int) $f['delete'],
+                    ];
+                }
+            }
+            if ($insert) {
+                DB::table('IWMS_UserTypeAccess')->insert($insert);
+            }
+        });
+ 
+        Cache::forget("access:type:{$typeId}");
+    }
+
+
     
 }

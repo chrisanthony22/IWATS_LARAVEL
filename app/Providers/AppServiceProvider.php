@@ -2,11 +2,11 @@
 
 namespace App\Providers;
 
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Event; // <--- ADDED THIS IMPORT
-use Illuminate\Support\ServiceProvider;
 use App\Listeners\AuditAuthEvents;
+use App\Services\Access;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,6 +23,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Event::subscribe(AuditAuthEvents::class);     // logs login, logout, failed login, lockout, password reset, register
+        // Register Audit Event Listener
+        Event::subscribe(AuditAuthEvents::class);
+
+        // Register custom @module Blade directive
+        Blade::if('module', fn (string $module, string $action = 'view') => 
+            Access::can(auth()->user(), $module, $action)
+        );
     }
 }
