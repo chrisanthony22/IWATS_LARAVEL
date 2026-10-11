@@ -4,7 +4,9 @@ namespace App\Providers;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Event; // <--- ADDED THIS IMPORT
 use Illuminate\Support\ServiceProvider;
+use App\Listeners\AuditAuthEvents;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,11 +23,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // TEMPORARY: log every query slower than 500 ms. Remove this block when you're done testing.
-        DB::listen(function ($query) {
-            if ($query->time > 500) {
-                Log::warning(sprintf('SLOW QUERY %.0f ms: %s', $query->time, $query->sql));
-            }
-        });
+        Event::subscribe(AuditAuthEvents::class);     // logs login, logout, failed login, lockout, password reset, register
     }
 }

@@ -22,7 +22,7 @@
             <label for="name" class="block text-[13px] font-medium t-muted">{{ __('Name') }}</label>
             <input id="name" name="name" type="text" value="{{ old('name', $user->name) }}"
                    required autofocus autocomplete="name"
-                   class="t-input mt-1.5 block h-11 w-full rounded-lg px-3.5 text-sm">
+                   class="t-input mt-1 block h-9 w-full rounded-lg px-3 text-sm">
             <x-input-error class="mt-1.5 text-[13px] !text-red-500" :messages="$errors->get('name')" />
         </div>
 
@@ -31,7 +31,7 @@
             <label for="email" class="block text-[13px] font-medium t-muted">{{ __('Email address') }}</label>
             <input id="email" name="email" type="email" value="{{ old('email', $user->email) }}"
                    required autocomplete="username"
-                   class="t-input mt-1.5 block h-11 w-full rounded-lg px-3.5 text-sm">
+                   class="t-input mt-1 block h-9 w-full rounded-lg px-3 text-sm">
             <x-input-error class="mt-1.5 text-[13px] !text-red-500" :messages="$errors->get('email')" />
 
             @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
@@ -57,7 +57,7 @@
 
         <div class="flex items-center gap-4 pt-1">
             <button type="submit"
-                    class="t-btn h-11 rounded-lg px-6 text-sm font-bold shadow-sm active:scale-[0.99] focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300/30">
+                    class="t-btn h-9 rounded-lg px-5 text-sm font-bold shadow-sm active:scale-[0.99] focus:outline-none focus-visible:ring-4 focus-visible:ring-sky-300/30">
                 {{ __('Save') }}
             </button>
 

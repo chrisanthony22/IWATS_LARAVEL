@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'Island Water') }} – Forgot password</title>
+    <link rel="icon" type="image/png" href="{{ asset('images/iwlogo3.png') }}">
 
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=nunito:400,500,600,700,800" rel="stylesheet" />
@@ -41,14 +42,18 @@
             {{-- LEFT: hero text --}}
             <div class="hidden md:block">
                 <div class="flex items-center gap-4">
-                    <img src="{{ asset('images/logo2.png') }}" alt="Island Water" class="logo-blue h-20 w-auto">
-                    <img src="{{ asset('images/logo-blue.png') }}" alt="Island Water" class="logo-light h-20 w-auto">
-                    <h1 class="text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight">IWATS</h1>
+                    <img src="{{ asset('images/logo2.png') }}" alt="Island Water" class="logo-blue h-36 w-auto">
+                    <img src="{{ asset('images/logo-blue.png') }}" alt="Island Water" class="logo-light h-36 w-auto">
+                    <div>
+                        <h1 class="text-4xl lg:text-5xl font-extrabold leading-tight tracking-tight">IWATS</h1>
+                        <hr class="t-divider">
+                        <p class="t-muted mt-2 mb-2 max-w-sm text-base leading-relaxed">
+                            Log in to manage your bookings, transactions and accounts.
+                        </p>
+                        <hr class="t-divider">
+                        <p class="mt-1 text-lg">By Shogun Ships</p>
+                    </div>
                 </div>
-                <p class="mt-4 max-w-sm text-base leading-relaxed t-muted">
-                    Log in to manage your bookings, transactions and accounts.
-                </p>
-                <p class="mt-10 text-sm t-muted">By Shogun Ships</p>
             </div>
 
             {{-- RIGHT: glass card --}}

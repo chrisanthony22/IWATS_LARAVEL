@@ -9,6 +9,9 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 /**
  * CENTRAL DATA FILE: every database read/write used by the system lives here.
@@ -593,4 +596,154 @@ class DataService
             ],
         ];
     }
+
+
+
+    /** Filters -> query. Dates are inclusive. Search looks in description, user, IP, table and record id. */
+    private function auditQuery(array $f): Builder
+    {
+        $q = DB::table('audit_logs')
+            ->where('created_at', '>=', Carbon::parse($f['start'])->format('Ymd') . ' 00:00:00')
+            ->where('created_at', '<',  Carbon::parse($f['end'])->addDay()->format('Ymd') . ' 00:00:00')   // 'Ymd' = language-neutral for SQL Server
+            ->when($f['event'] !== '', fn ($q) => $q->where('event', $f['event']))
+            ->when($f['table'] !== '', fn ($q) => $q->where('auditable_type', $f['table']))
+            ->when($f['user'] > 0,     fn ($q) => $q->where('user_id', $f['user']));
+    
+        if ($f['q'] !== '') {
+            $like = '%' . $f['q'] . '%';
+            $q->where(fn ($w) => $w->where('description', 'like', $like)
+                ->orWhere('user_name', 'like', $like)
+                ->orWhere('ip_address', 'like', $like)
+                ->orWhere('auditable_type', 'like', $like)
+                ->orWhere('auditable_id', 'like', $like));
+        }
+    
+        return $q;
+    }
+    
+    /** One page of log rows, newest first. */
+    public function getAuditLogs(array $f, int $perPage = 25): LengthAwarePaginator
+    {
+        return $this->auditQuery($f)->orderByDesc('id')->paginate($perPage);
+    }
+    
+    /** Every matching row, in chunks (for the CSV export). $each receives one row object at a time. */
+    public function streamAuditLogs(array $f, \Closure $each): void
+    {
+        $this->auditQuery($f)->orderBy('id')->chunkById(1000, function ($rows) use ($each) {
+            foreach ($rows as $r) {
+                $each($r);
+            }
+        }, 'id');
+    }
+    
+    /** Overview numbers for the date range only (the other filters do not change them). */
+    public function getAuditStats(array $f): array
+    {
+        $r = $this->auditQuery(array_merge($f, ['event' => '', 'table' => '', 'user' => 0, 'q' => '']))
+            ->selectRaw("COUNT(*) AS total,
+                        SUM(CASE WHEN event = 'login' THEN 1 ELSE 0 END) AS logins,
+                        SUM(CASE WHEN event IN ('login_failed', 'lockout') THEN 1 ELSE 0 END) AS failed,
+                        SUM(CASE WHEN event IN ('created', 'updated', 'deleted', 'restored') THEN 1 ELSE 0 END) AS changes")
+            ->first();
+    
+        return ['total' => (int) $r->total, 'logins' => (int) $r->logins, 'failed' => (int) $r->failed, 'changes' => (int) $r->changes];
+    }
+    
+    /** Dropdown options for the filters. Plain arrays, cached for 2 minutes. */
+    public function getAuditOptions(): array
+    {
+        return Cache::remember('dd:audit_options', 120, fn () => [
+            'events' => DB::table('audit_logs')->distinct()->orderBy('event')->pluck('event')->all(),
+            'tables' => DB::table('audit_logs')->whereNotNull('auditable_type')->distinct()->orderBy('auditable_type')->pluck('auditable_type')->all(),
+            'users'  => DB::table('audit_logs')->whereNotNull('user_id')
+                ->selectRaw('user_id, MAX(user_name) AS user_name')->groupBy('user_id')->orderBy('user_name')->get()
+                ->map(fn ($u) => ['id' => (int) $u->user_id, 'name' => $u->user_name ?: ('User #' . $u->user_id)])->all(),
+        ]);
+    }
+
+
+    /** FOR USER ACCOUNT CRUD FUNCTIONS */
+    /** User Type dropdown options (ID, UserType). */
+    public function getUserTypes(): Collection
+    {
+        return $this->rememberRows('dd:user_types', 300, fn () =>
+            DB::table('IWMS_UserTypes')->select('ID', 'UserType')->orderBy('UserType')->get());
+    }
+ 
+    /** One page of users with their user type name. $q searches name + email. $typeId 0 = all types. */
+    public function getUserAccounts(string $q = '', int $typeId = 0, int $perPage = 15): LengthAwarePaginator
+    {
+        return User::query()
+            ->leftJoin('IWMS_UserTypes as UT', 'users.usertype_id', '=', 'UT.ID')
+            ->select('users.id', 'users.name', 'users.email', 'users.usertype_id', 'users.created_at', 'UT.UserType as usertype_name')
+            ->when($q !== '', function ($w) use ($q) {
+                $like = '%' . $q . '%';
+                $w->where(fn ($x) => $x->where('users.name', 'like', $like)->orWhere('users.email', 'like', $like));
+            })
+            ->when($typeId > 0, fn ($w) => $w->where('users.usertype_id', $typeId))
+            ->orderBy('users.name')
+            ->orderBy('users.id')              // SQL Server paging needs a stable ORDER BY
+            ->paginate($perPage);
+    }
+ 
+    /**
+     * Creates the user with a random password and calls $notify($user, $plainPassword) to email it.
+     * The plain password only exists inside this method and the $notify closure: it is never returned,
+     * flashed, logged or shown. If $notify throws (mail failed), the insert is rolled back.
+     */
+    public function createUserAccount(array $d, \Closure $notify): User
+    {
+        return DB::transaction(function () use ($d, $notify) {
+            $plain = Str::password(12, symbols: false);
+ 
+            $user = new User();
+            $user->forceFill([
+                'name'              => $d['name'],
+                'email'             => $d['email'],
+                'usertype_id'       => (int) $d['usertype_id'],
+                'password'          => Hash::make($plain),
+                'email_verified_at' => now(),            // created by an admin, so no verification step
+            ])->save();
+ 
+            $notify($user, $plain);
+ 
+            return $user;
+        });
+    }
+ 
+    public function updateUserAccount(User $user, array $d): User
+    {
+        $user->forceFill([
+            'name'        => $d['name'],
+            'email'       => $d['email'],
+            'usertype_id' => (int) $d['usertype_id'],
+        ])->save();
+ 
+        return $user;
+    }
+ 
+    /** Sets a new random password and emails it (same rules as createUserAccount). */
+    public function resetUserPassword(User $user, \Closure $notify): void
+    {
+        DB::transaction(function () use ($user, $notify) {
+            $plain = Str::password(12, symbols: false);
+ 
+            $user->forceFill([
+                'password'       => Hash::make($plain),
+                'remember_token' => null,                 // signs out any "remember me" sessions
+            ])->save();
+ 
+            $notify($user, $plain);
+        });
+    }
+ 
+    public function deleteUserAccount(User $user): void
+    {
+        $user->delete();
+    }
+    /** END OF USER ACCOUNT CRUD FUNCTIONS */
+
+
+    
 }
